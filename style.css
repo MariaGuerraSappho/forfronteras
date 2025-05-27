@@ -1,0 +1,75 @@
+body {
+  font-family: 'Rock Salt', cursive, Arial, sans-serif;
+  text-align: center;
+  background: linear-gradient(135deg, #ffe6f0, #ffb3d1);
+  margin: 0;
+  padding: 20px;
+  font-size: 20px;
+}
+
+h1 {
+  color: #e91e63;
+  text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff;
+  font-size: 48px;
+}
+
+#setupSection,
+#staffContainer,
+#tuningSection {
+  margin-bottom: 20px;
+  background: #fff;
+  display: inline-block;
+  padding: 10px 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px dashed #ff69b4;
+}
+
+#staffContainer {
+  width: 320px;
+}
+
+#tuningSection {
+  font-size: 20px;
+}
+
+#controls {
+  margin-top: 20px;
+}
+
+button {
+  font-size: 22px;
+  padding: 10px 15px;
+  margin: 0 10px;
+  cursor: pointer;
+  background-color: #ff69b4;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #ff85c1;
+}
+
+#noteHead {
+  fill: hotpink;
+}
+
+#noteHead.playing {
+  fill: orange;
+  transition: fill 0.2s ease-out;
+}
+
+#clefSymbol {
+  font-size: 60px;
+  fill: #ff69b4;
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+#setupSection label {
+  font-size: 20px;
+}
