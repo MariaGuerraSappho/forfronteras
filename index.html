@@ -3,13 +3,10 @@
     <meta charset="UTF-8" />
     <title>This Frontera</title>
     <link rel="stylesheet" href="style.css" />
-    <!-- Add a punk/girly font for extra style -->
     <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet" />
     <script type="importmap">
       {
-        "imports": {
-          // (No external libraries needed for now.)
-        }
+        "imports": {}
       }
     </script>
   </head>
@@ -33,28 +30,33 @@
         <input type="radio" name="clef" value="treble" checked /> Treble
         <input type="radio" name="clef" value="bass" /> Bass
       </label>
+      &nbsp;&nbsp;
+      <label><input type="checkbox" id="keepRoot" /> Keep Root</label>
     </section>
 
     <section id="displaySection">
       <div id="staffContainer">
         <svg id="staffSVG" width="300" height="150">
-          <!-- Draw five horizontal staff lines -->
+          <!-- Staff lines -->
           <line x1="20" x2="280" y1="50" y2="50" stroke="black" stroke-width="2" />
           <line x1="20" x2="280" y1="70" y2="70" stroke="black" stroke-width="2" />
           <line x1="20" x2="280" y1="90" y2="90" stroke="black" stroke-width="2" />
           <line x1="20" x2="280" y1="110" y2="110" stroke="black" stroke-width="2" />
           <line x1="20" x2="280" y1="130" y2="130" stroke="black" stroke-width="2" />
 
-          <!-- Clef symbol updated by JS based on user selection -->
+          <!-- Clef symbol -->
           <text id="clefSymbol" x="25" y="105" text-anchor="middle"></text>
 
-          <!-- Active note head (position updated via JS) -->
+          <!-- Root note head (reference) -->
+          <circle id="rootNoteHead" cx="150" cy="120" r="10" fill="blue" style="display: none;" />
+
+          <!-- Active note head -->
           <circle id="noteHead" cx="150" cy="120" r="10" fill="black" />
 
-          <!-- Preview note head (will show in a different color, hidden by default) -->
+          <!-- Preview note head -->
           <circle id="previewNoteHead" cx="150" cy="120" r="10" fill="orange" style="display: none;" />
 
-          <!-- Note label (name & octave) -->
+          <!-- Note label -->
           <text id="noteLabel" x="150" y="145" text-anchor="middle" font-size="18"></text>
         </svg>
       </div>
@@ -65,7 +67,6 @@
       <button id="nextButton">Next</button>
     </section>
 
-    <!-- NEW SECTION: Display the tuning difference in cents -->
     <section id="tuningSection">
       <p id="centsDifference">Tuning difference: 0.00 cents</p>
     </section>
