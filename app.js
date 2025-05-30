@@ -443,4 +443,49 @@ class App {
     const frequencies = player.notes
       .filter(note => player.activeTones.includes(note.note))
       .map(note => note.frequency);
-    player.pitchDetector.setFrequenciesToIgnore(f
+    player.pitchDetector.setFrequenciesToIgnore(frequencies);
+  }
+
+    endSession() {
+    if (this.sessionEnded) return;
+    // Stop all players if listening
+    ['1', '2'].forEach(id => {
+      const player = this[`player${id}`];
+      if (player.isListening) {
+        this.stopListening(id);
+      }
+      if (player.audioRecorder) {
+        player.audioRecorder.stopRecording(() => {
+          const blob = player.audioRecorder.getBlob();
+          player.recordedAudioBlob = blob;
+        });
+      }
+      player.toneGenerator.fadeOutAll(false, 10);
+      player.startBtn.disabled = true;
+      player.micSelect.disabled = true;
+    });
+    this.endBtn.disabled = true;
+    this.exportSection.style.display = 'block';
+    this.sessionEnded = true;
+  }
+
+  downloadInputAudio() {
+    alert('Download function not implemented for duo mode yet.');
+  }
+
+  downloadSineAudio() {
+    alert('Download sine audio function not implemented for duo mode yet.');
+  }
+
+  exportImage() {
+    alert('Export image function not implemented for duo mode yet.');
+  }
+
+  exportMusicXML() {
+    alert('Export MusicXML function not implemented for duo mode yet.');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  new App();
+});
