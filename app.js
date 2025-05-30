@@ -72,30 +72,23 @@ class App {
     this.exportImageBtn = document.getElementById('export-image-btn');
     this.exportMusicXMLBtn = document.getElementById('export-musicxml-btn');
 
-    // New elements for manual compose mode and playback
     this.modeToggleBtn = document.getElementById('mode-toggle-btn');
     this.playBtn = document.getElementById('play-btn');
     this.stopBtn = document.getElementById('stop-btn');
   }
   
   initEventListeners() {
-    this.startBtn.addEventListener('click', () => this.toggleListening());
-    this.addNoteBtn.addEventListener('click', () => this.addNote());
-    this.endBtn.addEventListener('click', () => this.endSession());
-    this.downloadInputAudioBtn.addEventListener('click', () => this.downloadInputAudio());
-    this.downloadSineAudioBtn.addEventListener('click', () => this.downloadSineAudio());
-    this.exportImageBtn.addEventListener('click', () => this.exportImage());
-    this.exportMusicXMLBtn.addEventListener('click', () => this.exportMusicXML());
+    if (this.startBtn) this.startBtn.addEventListener('click', () => this.toggleListening());
+    if (this.addNoteBtn) this.addNoteBtn.addEventListener('click', () => this.addNote());
+    if (this.endBtn) this.endBtn.addEventListener('click', () => this.endSession());
+    if (this.downloadInputAudioBtn) this.downloadInputAudioBtn.addEventListener('click', () => this.downloadInputAudio());
+    if (this.downloadSineAudioBtn) this.downloadSineAudioBtn.addEventListener('click', () => this.downloadSineAudio());
+    if (this.exportImageBtn) this.exportImageBtn.addEventListener('click', () => this.exportImage());
+    if (this.exportMusicXMLBtn) this.exportMusicXMLBtn.addEventListener('click', () => this.exportMusicXML());
 
-    if (this.modeToggleBtn) {
-      this.modeToggleBtn.addEventListener('click', () => this.toggleMode());
-    }
-    if (this.playBtn) {
-      this.playBtn.addEventListener('click', () => this.playComposition());
-    }
-    if (this.stopBtn) {
-      this.stopBtn.addEventListener('click', () => this.stopPlayback());
-    }
+    if (this.modeToggleBtn) this.modeToggleBtn.addEventListener('click', () => this.toggleMode());
+    if (this.playBtn) this.playBtn.addEventListener('click', () => this.playComposition());
+    if (this.stopBtn) this.stopBtn.addEventListener('click', () => this.stopPlayback());
   }
   
   createPianoKeyboard() {
@@ -294,7 +287,6 @@ class App {
     this.updatePitchDisplay('--', '');
   }
   
-  // --- New manual compose methods ---
   toggleMode() {
     this.mode = this.mode === 'live' ? 'manual' : 'live';
     if (this.modeToggleBtn) {
@@ -307,7 +299,6 @@ class App {
       if (this.playBtn) this.playBtn.disabled = false;
       if (this.stopBtn) this.stopBtn.disabled = false;
       
-      // Disable live input buttons to avoid conflict
       this.startBtn.disabled = true;
       this.addNoteBtn.disabled = true;
       this.micSelect.disabled = true;
