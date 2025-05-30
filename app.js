@@ -62,7 +62,6 @@ class App {
   initElements() {
     this.micSelect = document.getElementById('mic-select');
     this.startBtn = document.getElementById('start-btn');
-    this.addNoteBtn = document.getElementById('add-note-btn');
     this.endBtn = document.getElementById('end-btn');
     this.detectedNote = document.getElementById('detected-note');
     this.detectedCents = document.getElementById('detected-cents');
@@ -79,7 +78,6 @@ class App {
   
   initEventListeners() {
     if (this.startBtn) this.startBtn.addEventListener('click', () => this.toggleListening());
-    if (this.addNoteBtn) this.addNoteBtn.addEventListener('click', () => this.addNote());
     if (this.endBtn) this.endBtn.addEventListener('click', () => this.endSession());
     if (this.downloadInputAudioBtn) this.downloadInputAudioBtn.addEventListener('click', () => this.downloadInputAudio());
     if (this.downloadSineAudioBtn) this.downloadSineAudioBtn.addEventListener('click', () => this.downloadSineAudio());
@@ -201,7 +199,6 @@ class App {
       this.isListening = true;
       this.startBtn.textContent = 'Listening... 5s';
       this.startBtn.disabled = true;
-      this.addNoteBtn.disabled = true;
       this.endBtn.disabled = false;
       let secondsLeft = this.listeningDuration / 1000;
       this.countdownInterval = setInterval(() => {
@@ -237,9 +234,6 @@ class App {
     this.isListening = false;
     this.startBtn.textContent = 'Start Listening';
     this.startBtn.disabled = false;
-    if (this.currentDetectedNote) {
-      this.addNoteBtn.disabled = false;
-    }
   }
   
   updatePitchDisplay(note, cents) {
@@ -282,7 +276,6 @@ class App {
     
     this.startBtn.textContent = 'Start Listening';
     this.startBtn.disabled = false;
-    this.addNoteBtn.disabled = true;
     this.currentDetectedNote = null;
     this.updatePitchDisplay('--', '');
   }
@@ -300,13 +293,11 @@ class App {
       if (this.stopBtn) this.stopBtn.disabled = false;
       
       this.startBtn.disabled = true;
-      this.addNoteBtn.disabled = true;
       this.micSelect.disabled = true;
     } else {
       if (this.playBtn) this.playBtn.disabled = true;
       if (this.stopBtn) this.stopBtn.disabled = true;
       this.startBtn.disabled = false;
-      this.addNoteBtn.disabled = true;
       this.micSelect.disabled = false;
     }
   }
@@ -366,7 +357,6 @@ class App {
     }
     this.toneGenerator.fadeOutAll(false, 10);
     this.startBtn.disabled = true;
-    this.addNoteBtn.disabled = true;
     this.endBtn.disabled = true;
     this.micSelect.disabled = true;
     this.exportSection.style.display = 'block';
@@ -446,7 +436,6 @@ class App {
   }
 }
 
-// Initialize the app when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   new App();
 });
