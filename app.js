@@ -28,6 +28,38 @@ class App {
     this.createPianoKeyboard();
   }
   
+  // --- Add Just Intonation helper ---
+  getJustIntonationFrequency(noteName, octave, rootFreq = 440) {
+    const justIntonationRatios = {
+      'A': 1,
+      'B': 9/8,
+      'C#': 5/4,
+      'D': 4/3,
+      'E': 3/2,
+      'F#': 5/3,
+      'G#': 15/8,
+      'C': 25/16,
+      'D#': 6/5,
+      'F': 45/32,
+      'G': 16/9,
+      'A#': 25/16,
+      'BB': 16/9, // double B for Bb (normalize in code)
+      'EB': 6/5,
+      'GB': 45/32,
+    };
+
+    // Normalize noteName to uppercase, replace 'b' with 'B' for flats keys
+    let normalizedNote = noteName.toUpperCase().replace('B', 'B'); // keep sharps (#) as is
+    // Special case for flats: convert 'Bb' → 'BB' (to match keys)
+    if (noteName.includes('b') && !noteName.includes('#')) {
+      normalizedNote = noteName[0].toUpperCase() + 'B';
+    }
+
+    const ratio = justIntonationRatios[normalizedNote] || 1;
+    const octaveDiff = octave - 4;
+    return rootFreq * ratio * Math.pow(2, octaveDiff);
+  }
+  
   initElements() {
     // Get DOM elements
     this.micSelect = document.getElementById('mic-select');
@@ -63,10 +95,8 @@ class App {
       'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'
     ];
     
-    // Keep track of white key position for black key placement
     let whiteKeyIndex = 0;
     
-    // Create the keys
     notes.forEach((note, index) => {
       const isBlackKey = note.includes('#');
       const keyElement = document.createElement('div');
@@ -75,20 +105,17 @@ class App {
       keyElement.classList.add(isBlackKey ? 'black-key' : 'white-key');
       keyElement.dataset.note = note;
       
-      // Add note label
       const labelElement = document.createElement('div');
       labelElement.classList.add('key-label');
       labelElement.textContent = note;
       keyElement.appendChild(labelElement);
       
-      // Position black keys
       if (isBlackKey) {
         keyElement.style.left = `${whiteKeyIndex * 40 - 12}px`;
       } else {
         whiteKeyIndex++;
       }
       
-      // Add event listeners
       keyElement.addEventListener('mousedown', () => {
         this.playPianoNote(note);
         keyElement.classList.add('active');
@@ -110,12 +137,10 @@ class App {
   }
   
   playPianoNote(note) {
-    // Play the note using the tone generator
     this.toneGenerator.playNote(note);
   }
   
   stopPianoNote(note) {
-    // Stop the note using the tone generator
     this.toneGenerator.stopNote(note);
   }
   
@@ -123,18 +148,13 @@ class App {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const microphones = devices.filter(device => device.kind === 'audioinput');
-      
-      // Clear the select element
       this.micSelect.innerHTML = '';
-      
-      // Add microphones to the select element
       microphones.forEach(mic => {
         const option = document.createElement('option');
         option.value = mic.deviceId;
         option.text = mic.label || `Microphone ${this.micSelect.options.length + 1}`;
         this.micSelect.appendChild(option);
       });
-      
       this.micSelect.disabled = false;
       this.startBtn.disabled = false;
     } catch (error) {
@@ -155,11 +175,7 @@ class App {
     try {
       const microphoneId = this.micSelect.value;
       await this.pitchDetector.start(microphoneId);
-      
-      // Update frequencies to ignore before starting detection
       this.updateFrequenciesToIgnore();
-      
-      // Start audio recording
       const stream = this.pitchDetector.getAudioStream();
       this.audioRecorder = new RecordRTC(stream, {
         type: 'audio',
@@ -167,22 +183,17 @@ class App {
         recorderType: RecordRTC.StereoAudioRecorder,
       });
       this.audioRecorder.startRecording();
-      
-      // Set up pitch detection callback
       this.pitchDetector.onPitch((note, frequency, cents) => {
         if (note && frequency) {
           this.currentDetectedNote = { note, frequency, cents };
           this.updatePitchDisplay(note, cents);
         }
       });
-      
       this.isListening = true;
       this.startBtn.textContent = 'Listening... 5s';
       this.startBtn.disabled = true;
       this.addNoteBtn.disabled = true;
       this.endBtn.disabled = false;
-      
-      // Set up countdown timer
       let secondsLeft = this.listeningDuration / 1000;
       this.countdownInterval = setInterval(() => {
         secondsLeft--;
@@ -190,14 +201,10 @@ class App {
           this.startBtn.textContent = `Listening... ${secondsLeft}s`;
         }
       }, 1000);
-      
-      // Auto-stop after listening duration
       this.listenTimer = setTimeout(() => {
         this.stopListening();
         this.startBtn.textContent = 'Listen Again';
         this.startBtn.disabled = false;
-        
-        // Automatically add the note if one was detected
         if (this.currentDetectedNote) {
           this.addNote();
         }
@@ -209,24 +216,18 @@ class App {
   }
   
   stopListening() {
-    // Clear the timer if it exists
     if (this.listenTimer) {
       clearTimeout(this.listenTimer);
       this.listenTimer = null;
     }
-    
-    // Clear the countdown interval
     if (this.countdownInterval) {
       clearInterval(this.countdownInterval);
       this.countdownInterval = null;
     }
-    
     this.pitchDetector.stop();
     this.isListening = false;
     this.startBtn.textContent = 'Start Listening';
     this.startBtn.disabled = false;
-    
-    // Only enable Add Note if we have a detected note
     if (this.currentDetectedNote) {
       this.addNoteBtn.disabled = false;
     }
@@ -238,9 +239,7 @@ class App {
       this.detectedCents.textContent = '';
       return;
     }
-    
     this.detectedNote.textContent = note;
-    
     if (cents !== undefined && cents !== null) {
       this.detectedCents.textContent = cents > 0 ? `+${cents.toFixed(0)}¢` : `${cents.toFixed(0)}¢`;
     } else {
@@ -251,30 +250,30 @@ class App {
   addNote() {
     if (!this.currentDetectedNote) return;
     
-    const { note, frequency } = this.currentDetectedNote;
+    const { note } = this.currentDetectedNote;
+    // Extract note name and octave, e.g. "C#4" → "C#", 4
+    const noteName = note.slice(0, -1);
+    const octave = parseInt(note.slice(-1));
     
-    // Add new note to the notes array (keep all notes for notation)
-    this.notes.push({ note, frequency });
+    // Calculate just intonation frequency based on A=440 root
+    const justFreq = this.getJustIntonationFrequency(noteName, octave, 440);
     
-    // Add the new note to active tones
+    // Store note with just intonation frequency
+    this.notes.push({ note, frequency: justFreq });
+    
     this.activeTones.push(note);
     
-    // If we have more than 2 tones playing, fade out the oldest one
     if (this.activeTones.length > 2) {
-      const oldestNote = this.activeTones.shift(); // Remove oldest note from active tones
-      this.toneGenerator.stopNote(oldestNote); // Fade out the oldest note
+      const oldestNote = this.activeTones.shift();
+      this.toneGenerator.stopNote(oldestNote);
     }
     
-    // Play the new tone
-    this.toneGenerator.playNote(note, frequency);
+    this.toneGenerator.playNote(note, justFreq);
     
-    // Update the score with all notes
     this.scoreRenderer.renderNotes(this.notes);
     
-    // Tell the pitch detector to ignore the frequencies we're playing
     this.updateFrequenciesToIgnore();
     
-    // Reset the listening state to prepare for next note
     this.startBtn.textContent = 'Start Listening';
     this.startBtn.disabled = false;
     this.addNoteBtn.disabled = true;
@@ -283,43 +282,29 @@ class App {
   }
   
   updateFrequenciesToIgnore() {
-    // Extract frequencies from active notes only
     const frequencies = this.notes
       .filter(note => this.activeTones.includes(note.note))
       .map(note => note.frequency);
-    
-    // Tell the pitch detector to ignore these frequencies
     this.pitchDetector.setFrequenciesToIgnore(frequencies);
   }
   
   endSession() {
     if (this.sessionEnded) return;
-    
-    // Stop listening if needed
     if (this.isListening) {
       this.stopListening();
     }
-    
-    // Stop recording
     if (this.audioRecorder) {
       this.audioRecorder.stopRecording(() => {
         const blob = this.audioRecorder.getBlob();
         this.recordedAudioBlob = blob;
       });
     }
-    
-    // Fade out all tones over 10 seconds
     this.toneGenerator.fadeOutAll(false, 10);
-    
-    // Disable controls
     this.startBtn.disabled = true;
     this.addNoteBtn.disabled = true;
     this.endBtn.disabled = true;
     this.micSelect.disabled = true;
-    
-    // Show export section
     this.exportSection.style.display = 'block';
-    
     this.sessionEnded = true;
   }
   
@@ -328,7 +313,6 @@ class App {
       alert('No input audio recording available.');
       return;
     }
-    
     const url = URL.createObjectURL(this.recordedAudioBlob);
     const a = document.createElement('a');
     a.style.display = 'none';
@@ -343,7 +327,6 @@ class App {
   }
   
   downloadSineAudio() {
-    // Use the tone generator to create a synthesized version of all the notes played
     this.toneGenerator.generateAudioFile(this.notes)
       .then(blob => {
         const url = URL.createObjectURL(blob);
@@ -366,7 +349,6 @@ class App {
   
   exportImage() {
     const scoreElement = document.getElementById('score-display');
-    
     html2canvas(scoreElement).then(canvas => {
       const url = canvas.toDataURL('image/png');
       const a = document.createElement('a');
@@ -383,10 +365,7 @@ class App {
   }
   
   exportMusicXML() {
-    // Generate MusicXML from the notes
     const musicXML = this.scoreRenderer.generateMusicXML(this.notes);
-    
-    // Create a Blob and download
     const blob = new Blob([musicXML], { type: 'application/xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
