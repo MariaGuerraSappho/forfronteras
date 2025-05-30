@@ -23,6 +23,7 @@ class App {
     this.mode = 'live'; // 'live' or 'manual' compose mode
     this.playbackTimer = null;
     this.playbackIndex = 0;
+    this.currentPlayingNote = null;
     
     this.initElements();
     this.initEventListeners();
@@ -74,6 +75,7 @@ class App {
     this.modeToggleBtn = document.getElementById('mode-toggle-btn');
     this.playBtn = document.getElementById('play-btn');
     this.stopBtn = document.getElementById('stop-btn');
+    this.nextNoteBtn = document.getElementById('next-note-btn');
   }
   
   initEventListeners() {
@@ -87,6 +89,7 @@ class App {
     if (this.modeToggleBtn) this.modeToggleBtn.addEventListener('click', () => this.toggleMode());
     if (this.playBtn) this.playBtn.addEventListener('click', () => this.playComposition());
     if (this.stopBtn) this.stopBtn.addEventListener('click', () => this.stopPlayback());
+    if (this.nextNoteBtn) this.nextNoteBtn.addEventListener('click', () => this.playNextNoteStep());
   }
   
   createPianoKeyboard() {
@@ -291,12 +294,14 @@ class App {
       this.scoreRenderer.renderNotes(this.notes);
       if (this.playBtn) this.playBtn.disabled = false;
       if (this.stopBtn) this.stopBtn.disabled = false;
+      if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
       
       this.startBtn.disabled = true;
       this.micSelect.disabled = true;
     } else {
       if (this.playBtn) this.playBtn.disabled = true;
       if (this.stopBtn) this.stopBtn.disabled = true;
+      if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
       this.startBtn.disabled = false;
       this.micSelect.disabled = false;
     }
@@ -310,31 +315,53 @@ class App {
   playComposition() {
     if (this.notes.length === 0) return;
     this.playbackIndex = 0;
-    this.playNextNote();
+    if (this.nextNoteBtn) this.nextNoteBtn.disabled = false;
+    this.playNextNoteStep();
   }
   
-  playNextNote() {
-    if (this.playbackIndex >= this.notes.length) {
-      this.stopPlayback();
-      return;
+  playNextNoteStep() {
+    if (this.notes.length === 0) return;
+
+    // Stop current playing note if any
+    if (this.currentPlayingNote) {
+      this.toneGenerator.stopNote(this.currentPlayingNote);
     }
+
+    // If playbackIndex is at or beyond notes length, reset to start
+    if (this.playbackIndex >= this.notes.length) {
+      this.playbackIndex = 0;
+    }
+
     const note = this.notes[this.playbackIndex];
     const freq = note.frequency || this.getJustIntonationFrequency(note.note.slice(0, -1), parseInt(note.note.slice(-1)), 440);
-    
+
     this.toneGenerator.playNote(note.note, freq);
-    
-    this.playbackTimer = setTimeout(() => {
-      this.toneGenerator.stopNote(note.note);
-      this.playbackIndex++;
-      this.playNextNote();
-    }, 600);
+    this.currentPlayingNote = note.note;
+
+    this.playbackIndex++;
+
+    // Disable nextNoteBtn if at end of notes
+    if (this.playbackIndex >= this.notes.length) {
+      if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
+    } else {
+      if (this.nextNoteBtn) this.nextNoteBtn.disabled = false;
+    }
+  }
+  
+  stopCurrentNote() {
+    if (this.currentPlayingNote) {
+      this.toneGenerator.stopNote(this.currentPlayingNote);
+      this.currentPlayingNote = null;
+    }
   }
   
   stopPlayback() {
+    this.stopCurrentNote();
     clearTimeout(this.playbackTimer);
     this.playbackTimer = null;
     this.toneGenerator.fadeOutAll(true, 0.5);
     this.playbackIndex = 0;
+    if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
   }
   
   updateFrequenciesToIgnore() {
