@@ -1,76 +1,82 @@
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>This Frontera</title>
-    <link rel="stylesheet" href="style.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet" />
-    <script type="importmap">
-      {
-        "imports": {}
-      }
-    </script>
-  </head>
-  <body>
-    <h1>This Frontera</h1>
-
-    <section id="setupSection">
-      <label for="waveformSelect">Waveform: </label>
-      <select id="waveformSelect">
-        <option value="sine">Sine</option>
-        <option value="square">Square</option>
-        <option value="triangle">Triangle</option>
-        <option value="sawtooth">Sawtooth</option>
-      </select>
-      &nbsp;&nbsp;
-      <label for="harmonicityRange">Harmonicity: </label>
-      <input type="range" id="harmonicityRange" min="1.0" max="3.0" step="0.1" value="1.0" />
-      <span id="harmonicityValue">1.0</span>
-      &nbsp;&nbsp;
-      <label>Clef:
-        <input type="radio" name="clef" value="treble" checked /> Treble
-        <input type="radio" name="clef" value="bass" /> Bass
-      </label>
-      &nbsp;&nbsp;
-      <label><input type="checkbox" id="keepRoot" /> Keep Root</label>
-    </section>
-
-    <section id="displaySection">
-      <div id="staffContainer">
-        <svg id="staffSVG" width="300" height="150">
-          <!-- Staff lines -->
-          <line x1="20" x2="280" y1="50" y2="50" stroke="black" stroke-width="2" />
-          <line x1="20" x2="280" y1="70" y2="70" stroke="black" stroke-width="2" />
-          <line x1="20" x2="280" y1="90" y2="90" stroke="black" stroke-width="2" />
-          <line x1="20" x2="280" y1="110" y2="110" stroke="black" stroke-width="2" />
-          <line x1="20" x2="280" y1="130" y2="130" stroke="black" stroke-width="2" />
-
-          <!-- Clef symbol -->
-          <text id="clefSymbol" x="25" y="105" text-anchor="middle"></text>
-
-          <!-- Root note head (reference) -->
-          <circle id="rootNoteHead" cx="150" cy="120" r="10" fill="blue" style="display: none;" />
-
-          <!-- Active note head -->
-          <circle id="noteHead" cx="150" cy="120" r="10" fill="black" />
-
-          <!-- Preview note head -->
-          <circle id="previewNoteHead" cx="150" cy="120" r="10" fill="orange" style="display: none;" />
-
-          <!-- Note label -->
-          <text id="noteLabel" x="150" y="145" text-anchor="middle" font-size="18"></text>
-        </svg>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>For Fronterras - Musical Pitch Detector</title>
+  <!-- Add Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Import VexFlow for music notation -->
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.1.0/build/cjs/vexflow.js"></script>
+  <!-- Import RecordRTC for recording -->
+  <script src="https://cdn.jsdelivr.net/npm/recordrtc@5.6.2/RecordRTC.min.js"></script>
+  <!-- Import html2canvas for score export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <img src="logo.png" alt="For Fronterras Logo" width="80">
+      <h1>For Fronterras</h1>
+    </header>
+    
+    <main>
+      <div class="controls-section">
+        <div class="input-controls">
+          <label for="mic-select">Select Microphone:</label>
+          <select id="mic-select" disabled>
+            <option value="">Loading microphones...</option>
+          </select>
+          <button id="start-btn" class="primary-btn">Start Listening</button>
+        </div>
+        
+        <div class="note-controls">
+          <button id="add-note-btn" class="accent-btn" disabled>Add Note</button>
+          <button id="end-btn" class="secondary-btn" disabled>End Session</button>
+        </div>
       </div>
-    </section>
+      
+      <div class="display-section">
+        <div class="pitch-display">
+          <div class="current-pitch">
+            <span id="detected-note">--</span>
+            <span id="detected-cents"></span>
+          </div>
+        </div>
+        
+        <div class="piano-container">
+          <div id="piano-keyboard"></div>
+        </div>
+        
+        <div class="score-container">
+          <div id="score-display"></div>
+        </div>
+      </div>
+      
+      <div class="export-section" id="export-section" style="display: none;">
+        <h2>Session Complete!</h2>
+        <div class="export-buttons">
+          <button id="download-input-audio-btn" class="export-btn">Download Input Audio</button>
+          <button id="download-sine-audio-btn" class="export-btn">Download Sine Audio</button>
+          <button id="export-image-btn" class="export-btn">Export Score as Image</button>
+          <button id="export-musicxml-btn" class="export-btn">Export as MusicXML</button>
+        </div>
+      </div>
+    </main>
+  </div>
 
-    <section id="controls">
-      <button id="playButton">Play</button>
-      <button id="nextButton">Next</button>
-    </section>
-
-    <section id="tuningSection">
-      <p id="centsDifference">Tuning difference: 0.00 cents</p>
-    </section>
-
-    <script type="module" src="script.js"></script>
-  </body>
+  <!-- JavaScript imports -->
+  <script type="importmap">
+  {
+    "imports": {
+      "pitch-detector": "./pitch-detector.js",
+      "tone-generator": "./tone-generator.js",
+      "score-renderer": "./score-renderer.js"
+    }
+  }
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
 </html>
