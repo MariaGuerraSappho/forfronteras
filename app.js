@@ -4,50 +4,62 @@ import ScoreRenderer from 'score-renderer';
 
 class App {
   constructor() {
-    this.pitchDetector = new PitchDetector();
-    this.toneGenerator = new ToneGenerator();
-    this.scoreRenderer = new ScoreRenderer('score-display');
-    
-    this.notes = [];
-    this.isListening = false;
-    this.sessionEnded = false;
-    this.currentDetectedNote = null;
-    this.audioRecorder = null;
-    this.recordedChunks = [];
-    this.listenTimer = null;
-    this.listeningDuration = 5000; // 5 seconds
-    this.countdownInterval = null;
-    this.pianoKeys = [];
-    this.activeTones = [];
+    this.player1 = this.createPlayerState('1');
+    this.player2 = this.createPlayerState('2');
+    this.mode = 'live'; // 'live' or 'manual'
+    this.activePlayer = '1'; // For manual mode piano input
 
-    this.mode = 'live'; // 'live' or 'manual' compose mode
-    this.playbackTimer = null;
-    this.playbackIndex = 0;
-    this.currentPlayingNote = null;
-    
+    this.listeningDuration = 5000; // 5 seconds
+
+    this.pianoKeys = [];
+
     this.initElements();
     this.initEventListeners();
     this.loadMicrophones();
     this.createPianoKeyboard();
   }
-  
+
+  createPlayerState(id) {
+    return {
+      pitchDetector: new PitchDetector(),
+      toneGenerator: new ToneGenerator(),
+      scoreRenderer: new ScoreRenderer(`score-display${id}`),
+      notes: [],
+      isListening: false,
+      currentDetectedNote: null,
+      playbackIndex: 0,
+      currentPlayingNote: null,
+      audioRecorder: null,
+      listenTimer: null,
+      countdownInterval: null,
+      activeTones: [],
+      micSelect: null,
+      startBtn: null,
+      detectedNoteElem: null,
+      detectedCentsElem: null,
+      playBtn: null,
+      nextNoteBtn: null,
+      stopBtn: null,
+    };
+  }
+
   getJustIntonationFrequency(noteName, octave, rootFreq = 440) {
     const justIntonationRatios = {
       'A': 1,
-      'B': 9/8,
-      'C#': 5/4,
-      'D': 4/3,
-      'E': 3/2,
-      'F#': 5/3,
-      'G#': 15/8,
-      'C': 25/16,
-      'D#': 6/5,
-      'F': 45/32,
-      'G': 16/9,
-      'A#': 25/16,
-      'BB': 16/9,
-      'EB': 6/5,
-      'GB': 45/32,
+      'B': 9 / 8,
+      'C#': 5 / 4,
+      'D': 4 / 3,
+      'E': 3 / 2,
+      'F#': 5 / 3,
+      'G#': 15 / 8,
+      'C': 25 / 16,
+      'D#': 6 / 5,
+      'F': 45 / 32,
+      'G': 16 / 9,
+      'A#': 25 / 16,
+      'BB': 16 / 9,
+      'EB': 6 / 5,
+      'GB': 45 / 32,
     };
 
     let normalizedNote = noteName.toUpperCase();
@@ -59,39 +71,59 @@ class App {
     const octaveDiff = octave - 4;
     return rootFreq * ratio * Math.pow(2, octaveDiff);
   }
-  
+
   initElements() {
-    this.micSelect = document.getElementById('mic-select');
-    this.startBtn = document.getElementById('start-btn');
+    // Player 1
+    this.player1.micSelect = document.getElementById('mic-select1');
+    this.player1.startBtn = document.getElementById('start-btn1');
+    this.player1.detectedNoteElem = document.getElementById('detected-note1');
+    this.player1.detectedCentsElem = document.getElementById('detected-cents1');
+    this.player1.playBtn = document.getElementById('play-btn1');
+    this.player1.nextNoteBtn = document.getElementById('next-note-btn1');
+    this.player1.stopBtn = document.getElementById('stop-btn1');
+
+    // Player 2
+    this.player2.micSelect = document.getElementById('mic-select2');
+    this.player2.startBtn = document.getElementById('start-btn2');
+    this.player2.detectedNoteElem = document.getElementById('detected-note2');
+    this.player2.detectedCentsElem = document.getElementById('detected-cents2');
+    this.player2.playBtn = document.getElementById('play-btn2');
+    this.player2.nextNoteBtn = document.getElementById('next-note-btn2');
+    this.player2.stopBtn = document.getElementById('stop-btn2');
+
+    this.modeToggleBtn = document.getElementById('mode-toggle-btn');
     this.endBtn = document.getElementById('end-btn');
-    this.detectedNote = document.getElementById('detected-note');
-    this.detectedCents = document.getElementById('detected-cents');
+
     this.exportSection = document.getElementById('export-section');
     this.downloadInputAudioBtn = document.getElementById('download-input-audio-btn');
     this.downloadSineAudioBtn = document.getElementById('download-sine-audio-btn');
     this.exportImageBtn = document.getElementById('export-image-btn');
     this.exportMusicXMLBtn = document.getElementById('export-musicxml-btn');
-
-    this.modeToggleBtn = document.getElementById('mode-toggle-btn');
-    this.playBtn = document.getElementById('play-btn');
-    this.stopBtn = document.getElementById('stop-btn');
-    this.nextNoteBtn = document.getElementById('next-note-btn');
   }
-  
+
   initEventListeners() {
-    if (this.startBtn) this.startBtn.addEventListener('click', () => this.toggleListening());
+    // Player 1 events
+    if (this.player1.startBtn) this.player1.startBtn.addEventListener('click', () => this.toggleListening('1'));
+    if (this.player1.playBtn) this.player1.playBtn.addEventListener('click', () => this.playComposition('1'));
+    if (this.player1.nextNoteBtn) this.player1.nextNoteBtn.addEventListener('click', () => this.playNextNoteStep('1'));
+    if (this.player1.stopBtn) this.player1.stopBtn.addEventListener('click', () => this.stopPlayback('1'));
+
+    // Player 2 events
+    if (this.player2.startBtn) this.player2.startBtn.addEventListener('click', () => this.toggleListening('2'));
+    if (this.player2.playBtn) this.player2.playBtn.addEventListener('click', () => this.playComposition('2'));
+    if (this.player2.nextNoteBtn) this.player2.nextNoteBtn.addEventListener('click', () => this.playNextNoteStep('2'));
+    if (this.player2.stopBtn) this.player2.stopBtn.addEventListener('click', () => this.stopPlayback('2'));
+
+    // Common
+    if (this.modeToggleBtn) this.modeToggleBtn.addEventListener('click', () => this.toggleMode());
     if (this.endBtn) this.endBtn.addEventListener('click', () => this.endSession());
+
     if (this.downloadInputAudioBtn) this.downloadInputAudioBtn.addEventListener('click', () => this.downloadInputAudio());
     if (this.downloadSineAudioBtn) this.downloadSineAudioBtn.addEventListener('click', () => this.downloadSineAudio());
     if (this.exportImageBtn) this.exportImageBtn.addEventListener('click', () => this.exportImage());
     if (this.exportMusicXMLBtn) this.exportMusicXMLBtn.addEventListener('click', () => this.exportMusicXML());
-
-    if (this.modeToggleBtn) this.modeToggleBtn.addEventListener('click', () => this.toggleMode());
-    if (this.playBtn) this.playBtn.addEventListener('click', () => this.playComposition());
-    if (this.stopBtn) this.stopBtn.addEventListener('click', () => this.stopPlayback());
-    if (this.nextNoteBtn) this.nextNoteBtn.addEventListener('click', () => this.playNextNoteStep());
   }
-  
+
   createPianoKeyboard() {
     const keyboardElement = document.getElementById('piano-keyboard');
     if (!keyboardElement) return;
@@ -145,324 +177,266 @@ class App {
       this.pianoKeys.push(keyElement);
     });
   }
-  
+
   playPianoNote(note) {
-    this.toneGenerator.playNote(note);
+    this.player1.toneGenerator.playNote(note);
+    this.player2.toneGenerator.playNote(note);
   }
-  
+
   stopPianoNote(note) {
-    this.toneGenerator.stopNote(note);
+    this.player1.toneGenerator.stopNote(note);
+    this.player2.toneGenerator.stopNote(note);
   }
-  
+
   async loadMicrophones() {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const microphones = devices.filter(device => device.kind === 'audioinput');
-      this.micSelect.innerHTML = '';
+
+      // Clear both selects
+      this.player1.micSelect.innerHTML = '';
+      this.player2.micSelect.innerHTML = '';
+
       microphones.forEach(mic => {
-        const option = document.createElement('option');
-        option.value = mic.deviceId;
-        option.text = mic.label || `Microphone ${this.micSelect.options.length + 1}`;
-        this.micSelect.appendChild(option);
+        const option1 = document.createElement('option');
+        option1.value = mic.deviceId;
+        option1.text = mic.label || `Microphone ${this.player1.micSelect.options.length + 1}`;
+        this.player1.micSelect.appendChild(option1);
+
+        const option2 = document.createElement('option');
+        option2.value = mic.deviceId;
+        option2.text = mic.label || `Microphone ${this.player2.micSelect.options.length + 1}`;
+        this.player2.micSelect.appendChild(option2);
       });
-      this.micSelect.disabled = false;
-      this.startBtn.disabled = false;
+
+      this.player1.micSelect.disabled = false;
+      this.player1.startBtn.disabled = false;
+      this.player2.micSelect.disabled = false;
+      this.player2.startBtn.disabled = false;
     } catch (error) {
       console.error('Error loading microphones:', error);
       alert('Could not access microphones. Please ensure you have granted microphone permissions.');
     }
   }
-  
-  async toggleListening() {
-    if (!this.isListening) {
-      await this.startListening();
+
+  async toggleListening(playerId) {
+    const player = this[`player${playerId}`];
+    if (!player.isListening) {
+      await this.startListening(playerId);
     } else {
-      this.stopListening();
+      this.stopListening(playerId);
     }
   }
-  
-  async startListening() {
+
+  async startListening(playerId) {
+    const player = this[`player${playerId}`];
     try {
-      const microphoneId = this.micSelect.value;
-      await this.pitchDetector.start(microphoneId);
-      this.updateFrequenciesToIgnore();
-      const stream = this.pitchDetector.getAudioStream();
-      this.audioRecorder = new RecordRTC(stream, {
+      const microphoneId = player.micSelect.value;
+      await player.pitchDetector.start(microphoneId);
+      player.listenTimer && clearTimeout(player.listenTimer);
+      player.countdownInterval && clearInterval(player.countdownInterval);
+
+      player.audioRecorder = new RecordRTC(player.pitchDetector.getAudioStream(), {
         type: 'audio',
         mimeType: 'audio/webm',
         recorderType: RecordRTC.StereoAudioRecorder,
       });
-      this.audioRecorder.startRecording();
-      this.pitchDetector.onPitch((note, frequency, cents) => {
+      player.audioRecorder.startRecording();
+
+      player.pitchDetector.onPitch((note, frequency, cents) => {
         if (note && frequency) {
-          this.currentDetectedNote = { note, frequency, cents };
-          this.updatePitchDisplay(note, cents);
+          player.currentDetectedNote = { note, frequency, cents };
+          this.updatePitchDisplayPlayer(playerId, note, cents);
         }
       });
-      this.isListening = true;
-      this.startBtn.textContent = 'Listening... 5s';
-      this.startBtn.disabled = true;
+
+      player.isListening = true;
+      player.startBtn.textContent = `Listening Player ${playerId}... 5s`;
+      player.startBtn.disabled = true;
       this.endBtn.disabled = false;
+
       let secondsLeft = this.listeningDuration / 1000;
-      this.countdownInterval = setInterval(() => {
+      player.countdownInterval = setInterval(() => {
         secondsLeft--;
         if (secondsLeft > 0) {
-          this.startBtn.textContent = `Listening... ${secondsLeft}s`;
+          player.startBtn.textContent = `Listening Player ${playerId}... ${secondsLeft}s`;
         }
       }, 1000);
-      this.listenTimer = setTimeout(() => {
-        this.stopListening();
-        this.startBtn.textContent = 'Listen Again';
-        this.startBtn.disabled = false;
-        if (this.currentDetectedNote) {
-          this.addNote();
+
+      player.listenTimer = setTimeout(() => {
+        this.stopListening(playerId);
+        player.startBtn.textContent = `Start Listening Player ${playerId}`;
+        player.startBtn.disabled = false;
+        if (player.currentDetectedNote) {
+          this.addNote(playerId);
         }
       }, this.listeningDuration);
     } catch (error) {
-      console.error('Error starting pitch detection:', error);
-      alert('Could not start pitch detection. Please check your microphone permissions.');
+      console.error(`Error starting pitch detection Player ${playerId}:`, error);
+      alert(`Could not start pitch detection Player ${playerId}. Please check your microphone permissions.`);
     }
   }
-  
-  stopListening() {
-    if (this.listenTimer) {
-      clearTimeout(this.listenTimer);
-      this.listenTimer = null;
+
+  stopListening(playerId) {
+    const player = this[`player${playerId}`];
+    if (player.listenTimer) {
+      clearTimeout(player.listenTimer);
+      player.listenTimer = null;
     }
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-      this.countdownInterval = null;
+    if (player.countdownInterval) {
+      clearInterval(player.countdownInterval);
+      player.countdownInterval = null;
     }
-    this.pitchDetector.stop();
-    this.isListening = false;
-    this.startBtn.textContent = 'Start Listening';
-    this.startBtn.disabled = false;
+    player.pitchDetector.stop();
+    player.isListening = false;
+    player.startBtn.textContent = `Start Listening Player ${playerId}`;
+    player.startBtn.disabled = false;
   }
-  
-  updatePitchDisplay(note, cents) {
+
+  updatePitchDisplayPlayer(playerId, note, cents) {
+    const player = this[`player${playerId}`];
     if (!note) {
-      this.detectedNote.textContent = '--';
-      this.detectedCents.textContent = '';
+      player.detectedNoteElem.textContent = '--';
+      player.detectedCentsElem.textContent = '';
       return;
     }
-    this.detectedNote.textContent = note;
+    player.detectedNoteElem.textContent = note;
     if (cents !== undefined && cents !== null) {
-      this.detectedCents.textContent = cents > 0 ? `+${cents.toFixed(0)}¢` : `${cents.toFixed(0)}¢`;
+      player.detectedCentsElem.textContent = cents > 0 ? `+${cents.toFixed(0)}¢` : `${cents.toFixed(0)}¢`;
     } else {
-      this.detectedCents.textContent = '';
+      player.detectedCentsElem.textContent = '';
     }
   }
-  
-  addNote() {
-    if (!this.currentDetectedNote) return;
-    
-    const { note } = this.currentDetectedNote;
+
+  addNote(playerId) {
+    const player = this[`player${playerId}`];
+    if (!player.currentDetectedNote) return;
+
+    const { note } = player.currentDetectedNote;
     const noteName = note.slice(0, -1);
     const octave = parseInt(note.slice(-1));
-    
+
     const justFreq = this.getJustIntonationFrequency(noteName, octave, 440);
-    
-    this.notes.push({ note, frequency: justFreq });
-    
-    this.activeTones.push(note);
-    
-    if (this.activeTones.length > 2) {
-      const oldestNote = this.activeTones.shift();
-      this.toneGenerator.stopNote(oldestNote);
+
+    player.notes.push({ note, frequency: justFreq });
+    player.activeTones.push(note);
+
+    if (player.activeTones.length > 2) {
+      const oldestNote = player.activeTones.shift();
+      player.toneGenerator.stopNote(oldestNote);
     }
-    
-    this.toneGenerator.playNote(note, justFreq);
-    
-    this.scoreRenderer.renderNotes(this.notes);
-    
-    this.updateFrequenciesToIgnore();
-    
-    this.startBtn.textContent = 'Start Listening';
-    this.startBtn.disabled = false;
-    this.currentDetectedNote = null;
-    this.updatePitchDisplay('--', '');
+
+    player.toneGenerator.playNote(note, justFreq);
+    player.scoreRenderer.renderNotes(player.notes);
+
+    this.updateFrequenciesToIgnore(playerId);
+
+    player.currentDetectedNote = null;
+    this.updatePitchDisplayPlayer(playerId, '--', '');
   }
-  
+
   toggleMode() {
     this.mode = this.mode === 'live' ? 'manual' : 'live';
     if (this.modeToggleBtn) {
       this.modeToggleBtn.textContent = this.mode === 'live' ? 'Switch to Manual Compose' : 'Switch to Live Input';
     }
-    
+
     if (this.mode === 'manual') {
-      this.notes = [];
-      this.scoreRenderer.renderNotes(this.notes);
-      if (this.playBtn) this.playBtn.disabled = false;
-      if (this.stopBtn) this.stopBtn.disabled = false;
-      if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
-      
-      this.startBtn.disabled = true;
-      this.micSelect.disabled = true;
+      this.player1.notes = [];
+      this.player2.notes = [];
+      this.player1.scoreRenderer.renderNotes(this.player1.notes);
+      this.player2.scoreRenderer.renderNotes(this.player2.notes);
+
+      if (this.player1.playBtn) this.player1.playBtn.disabled = false;
+      if (this.player1.stopBtn) this.player1.stopBtn.disabled = false;
+      if (this.player1.nextNoteBtn) this.player1.nextNoteBtn.disabled = true;
+
+      if (this.player2.playBtn) this.player2.playBtn.disabled = false;
+      if (this.player2.stopBtn) this.player2.stopBtn.disabled = false;
+      if (this.player2.nextNoteBtn) this.player2.nextNoteBtn.disabled = true;
+
+      this.player1.startBtn.disabled = true;
+      this.player1.micSelect.disabled = true;
+      this.player2.startBtn.disabled = true;
+      this.player2.micSelect.disabled = true;
     } else {
-      if (this.playBtn) this.playBtn.disabled = true;
-      if (this.stopBtn) this.stopBtn.disabled = true;
-      if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
-      this.startBtn.disabled = false;
-      this.micSelect.disabled = false;
+      if (this.player1.playBtn) this.player1.playBtn.disabled = true;
+      if (this.player1.stopBtn) this.player1.stopBtn.disabled = true;
+      if (this.player1.nextNoteBtn) this.player1.nextNoteBtn.disabled = true;
+
+      if (this.player2.playBtn) this.player2.playBtn.disabled = true;
+      if (this.player2.stopBtn) this.player2.stopBtn.disabled = true;
+      if (this.player2.nextNoteBtn) this.player2.nextNoteBtn.disabled = true;
+
+      this.player1.startBtn.disabled = false;
+      this.player1.micSelect.disabled = false;
+      this.player2.startBtn.disabled = false;
+      this.player2.micSelect.disabled = false;
     }
   }
-  
+
   addNoteManually(note) {
-    this.notes.push({ note, frequency: null });
-    this.scoreRenderer.renderNotes(this.notes);
+    // Add to active player in manual mode
+    const player = this.activePlayer === '1' ? this.player1 : this.player2;
+    player.notes.push({ note, frequency: null });
+    player.scoreRenderer.renderNotes(player.notes);
   }
-  
-  playComposition() {
-    if (this.notes.length === 0) return;
-    this.playbackIndex = 0;
-    if (this.nextNoteBtn) this.nextNoteBtn.disabled = false;
-    this.playNextNoteStep();
+
+  playComposition(playerId) {
+    const player = this[`player${playerId}`];
+    if (player.notes.length === 0) return;
+    player.playbackIndex = 0;
+    if (player.nextNoteBtn) player.nextNoteBtn.disabled = false;
+    this.playNextNoteStep(playerId);
   }
-  
-  playNextNoteStep() {
-    if (this.notes.length === 0) return;
+
+  playNextNoteStep(playerId) {
+    const player = this[`player${playerId}`];
+    if (player.notes.length === 0) return;
 
     // Stop current playing note if any
-    if (this.currentPlayingNote) {
-      this.toneGenerator.stopNote(this.currentPlayingNote);
+    if (player.currentPlayingNote) {
+      player.toneGenerator.stopNote(player.currentPlayingNote);
     }
 
     // If playbackIndex is at or beyond notes length, reset to start
-    if (this.playbackIndex >= this.notes.length) {
-      this.playbackIndex = 0;
+    if (player.playbackIndex >= player.notes.length) {
+      player.playbackIndex = 0;
     }
 
-    const note = this.notes[this.playbackIndex];
+    const note = player.notes[player.playbackIndex];
     const freq = note.frequency || this.getJustIntonationFrequency(note.note.slice(0, -1), parseInt(note.note.slice(-1)), 440);
 
-    this.toneGenerator.playNote(note.note, freq);
-    this.currentPlayingNote = note.note;
+    player.toneGenerator.playNote(note.note, freq);
+    player.currentPlayingNote = note.note;
 
-    this.playbackIndex++;
+    player.playbackIndex++;
 
     // Disable nextNoteBtn if at end of notes
-    if (this.playbackIndex >= this.notes.length) {
-      if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
+    if (player.playbackIndex >= player.notes.length) {
+      if (player.nextNoteBtn) player.nextNoteBtn.disabled = true;
     } else {
-      if (this.nextNoteBtn) this.nextNoteBtn.disabled = false;
+      if (player.nextNoteBtn) player.nextNoteBtn.disabled = false;
     }
   }
-  
-  stopCurrentNote() {
-    if (this.currentPlayingNote) {
-      this.toneGenerator.stopNote(this.currentPlayingNote);
-      this.currentPlayingNote = null;
-    }
-  }
-  
-  stopPlayback() {
-    this.stopCurrentNote();
-    clearTimeout(this.playbackTimer);
-    this.playbackTimer = null;
-    this.toneGenerator.fadeOutAll(true, 0.5);
-    this.playbackIndex = 0;
-    if (this.nextNoteBtn) this.nextNoteBtn.disabled = true;
-  }
-  
-  updateFrequenciesToIgnore() {
-    const frequencies = this.notes
-      .filter(note => this.activeTones.includes(note.note))
-      .map(note => note.frequency);
-    this.pitchDetector.setFrequenciesToIgnore(frequencies);
-  }
-  
-  endSession() {
-    if (this.sessionEnded) return;
-    if (this.isListening) {
-      this.stopListening();
-    }
-    if (this.audioRecorder) {
-      this.audioRecorder.stopRecording(() => {
-        const blob = this.audioRecorder.getBlob();
-        this.recordedAudioBlob = blob;
-      });
-    }
-    this.toneGenerator.fadeOutAll(false, 10);
-    this.startBtn.disabled = true;
-    this.endBtn.disabled = true;
-    this.micSelect.disabled = true;
-    this.exportSection.style.display = 'block';
-    this.sessionEnded = true;
-  }
-  
-  downloadInputAudio() {
-    if (!this.recordedAudioBlob) {
-      alert('No input audio recording available.');
-      return;
-    }
-    const url = URL.createObjectURL(this.recordedAudioBlob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = 'for-fronterras-input-recording.webm';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-  }
-  
-  downloadSineAudio() {
-    this.toneGenerator.generateAudioFile(this.notes)
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'for-fronterras-sine-tones.wav';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 100);
-      })
-      .catch(error => {
-        console.error('Error generating sine audio:', error);
-        alert('Could not generate sine audio file.');
-      });
-  }
-  
-  exportImage() {
-    const scoreElement = document.getElementById('score-display');
-    html2canvas(scoreElement).then(canvas => {
-      const url = canvas.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = 'for-fronterras-score.png';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
-    });
-  }
-  
-  exportMusicXML() {
-    const musicXML = this.scoreRenderer.generateMusicXML(this.notes);
-    const blob = new Blob([musicXML], { type: 'application/xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = 'for-fronterras-score.musicxml';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 100);
-  }
-}
 
-document.addEventListener('DOMContentLoaded', () => {
-  new App();
-});
+  stopCurrentNote(playerId) {
+    const player = this[`player${playerId}`];
+    if (player.currentPlayingNote) {
+      player.toneGenerator.stopNote(player.currentPlayingNote);
+      player.currentPlayingNote = null;
+    }
+  }
+
+  stopPlayback(playerId) {
+    const player = this[`player${playerId}`];
+    this.stopCurrentNote(playerId);
+    clearTimeout(player.playbackTimer);
+    player.playbackTimer = null;
+    player.toneGenerator.fadeOutAll(true, 0.5);
+    player.playbackIndex = 0;
+    if (player.nextNoteBtn) player.nextNoteBtn.disabled = true;
+  }
+
+  updateFrequenciesToIgnore(playerId) {
+   
