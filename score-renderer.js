@@ -6,28 +6,25 @@ class ScoreRenderer {
     this.stave = null;
     this.notes = [];
 
-    this.width = 700;  // track width explicitly
-    this.height = 150; // track height explicitly
+    this.width = 700;  
+    this.height = 220;  // increased height from 150 to 220
 
     this.initRenderer();
   }
 
   initRenderer() {
-    // Initialize the renderer
     const container = document.getElementById(this.containerId);
     const { Renderer, Stave } = Vex.Flow;
 
-    // Clear any existing content
     container.innerHTML = '';
 
-    // Create renderer with initial dimensions
     this.vf = new Renderer(container, Renderer.Backends.SVG);
     this.vf.resize(this.width, this.height);
     this.context = this.vf.getContext();
     this.context.setFont("Arial", 10);
 
-    // Create a stave
-    this.stave = new Stave(10, 40, this.width - 20);
+    // Move stave down a bit (from y=40 to y=70)
+    this.stave = new Stave(10, 70, this.width - 20);
     this.stave.addClef("treble").addTimeSignature("4/4");
     this.stave.setContext(this.context).draw();
   }
@@ -36,21 +33,18 @@ class ScoreRenderer {
     this.notes = notesData;
     this.context.clear();
 
-    // Calculate needed width based on number of notes
     const minWidth = 700;
     const desiredWidth = Math.max(minWidth, this.notes.length * 80 + 50);
 
-    // Resize renderer if needed
     if (desiredWidth > this.width) {
       this.width = desiredWidth;
       this.vf.resize(this.width, this.height);
 
-      // Recreate stave with new width
-      this.stave = new Vex.Flow.Stave(10, 40, this.width - 20);
+      // Adjust stave vertical position to 70 as well
+      this.stave = new Vex.Flow.Stave(10, 70, this.width - 20);
       this.stave.addClef("treble").addTimeSignature("4/4");
     }
 
-    // Redraw the stave
     this.stave.setContext(this.context).draw();
 
     if (this.notes.length === 0) return;
@@ -58,21 +52,17 @@ class ScoreRenderer {
     const { StaveNote, Accidental } = Vex.Flow;
     const renderedNotes = [];
 
-    // Render all notes
     for (const noteData of this.notes) {
       const noteName = noteData.note.substring(0, noteData.note.length - 1);
       const octave = noteData.note.substring(noteData.note.length - 1);
 
-      // Convert to VexFlow notation
       let vfNote = this.convertToVexFlowNote(noteName, octave);
 
-      // Create the note
       const staveNote = new StaveNote({
         keys: [vfNote],
         duration: "q"
       });
 
-      // Add accidental if needed
       if (noteName.includes('#')) {
         staveNote.addModifier(new Accidental("#"));
       } else if (noteName.includes('b')) {
@@ -82,10 +72,8 @@ class ScoreRenderer {
       renderedNotes.push(staveNote);
     }
 
-    // Format and draw the notes
     const { Formatter, Voice } = Vex.Flow;
 
-    // If no notes, add a quarter rest
     if (renderedNotes.length === 0) {
       renderedNotes.push(new StaveNote({
         keys: ["b/4"],
@@ -101,15 +89,11 @@ class ScoreRenderer {
   }
 
   convertToVexFlowNote(noteName, octave) {
-    // Convert note name to VexFlow format (lowercase for note, / for octave)
     let note = noteName.replace('#', '').toLowerCase();
-
-    // VexFlow format: note/octave (e.g., "c/4")
     return `${note}/${octave}`;
   }
 
   generateMusicXML(notesData) {
-    // Basic MusicXML template
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="3.1">
@@ -135,21 +119,15 @@ class ScoreRenderer {
         </clef>
       </attributes>`;
 
-    // Add notes
     for (const noteData of notesData) {
       const noteName = noteData.note.substring(0, noteData.note.length - 1);
       const octave = noteData.note.substring(noteData.note.length - 1);
 
-      // Handle accidentals
       let step = noteName.charAt(0);
       let alter = "0";
-      if (noteName.includes('#')) {
-        alter = "1";
-      } else if (noteName.includes('b')) {
-        alter = "-1";
-      }
+      if (noteName.includes('#')) alter = "1";
+      else if (noteName.includes('b')) alter = "-1";
 
-      // Add note to XML
       xml += `
       <note>
         <pitch>
@@ -162,7 +140,6 @@ class ScoreRenderer {
       </note>`;
     }
 
-    // Close the XML
     xml += `
     </measure>
   </part>
