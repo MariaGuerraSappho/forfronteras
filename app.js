@@ -412,7 +412,7 @@ class App {
     this.playNextNoteStep(playerId);
   }
 
-  playNextNoteStep(playerId) {
+   playNextNoteStep(playerId) {
     const player = this[`player${playerId}`];
     if (player.notes.length === 0) return;
 
@@ -438,4 +438,76 @@ class App {
     if (player.playbackIndex >= player.notes.length) {
       if (player.nextNoteBtn) player.nextNoteBtn.disabled = true;
     } else {
-     
+      if (player.nextNoteBtn) player.nextNoteBtn.disabled = false;
+    }
+  }
+
+  stopCurrentNote(playerId) {
+    const player = this[`player${playerId}`];
+    if (player.currentPlayingNote) {
+      player.toneGenerator.stopNote(player.currentPlayingNote);
+      player.currentPlayingNote = null;
+    }
+  }
+
+  stopPlayback(playerId) {
+    const player = this[`player${playerId}`];
+    this.stopCurrentNote(playerId);
+    clearTimeout(player.playbackTimer);
+    player.playbackTimer = null;
+    player.toneGenerator.fadeOutAll(true, 0.5);
+    player.playbackIndex = 0;
+    if (player.nextNoteBtn) player.nextNoteBtn.disabled = true;
+  }
+
+  updateFrequenciesToIgnore(playerId) {
+    const player = this[`player${playerId}`];
+    const frequencies = player.notes
+      .filter(note => player.activeTones.includes(note.note))
+      .map(note => note.frequency);
+    player.pitchDetector.setFrequenciesToIgnore(frequencies);
+  }
+
+  endSession() {
+    if (this.sessionEnded) return;
+    // Stop all players if listening
+    ['1', '2'].forEach(id => {
+      const player = this[`player${id}`];
+      if (player.isListening) {
+        this.stopListening(id);
+      }
+      if (player.audioRecorder) {
+        player.audioRecorder.stopRecording(() => {
+          const blob = player.audioRecorder.getBlob();
+          player.recordedAudioBlob = blob;
+        });
+      }
+      player.toneGenerator.fadeOutAll(false, 10);
+      player.startBtn.disabled = true;
+      player.micSelect.disabled = true;
+    });
+    this.endBtn.disabled = true;
+    this.exportSection.style.display = 'block';
+    this.sessionEnded = true;
+  }
+
+  downloadInputAudio() {
+    alert('Download function not implemented for duo mode yet.');
+  }
+
+  downloadSineAudio() {
+    alert('Download sine audio function not implemented for duo mode yet.');
+  }
+
+  exportImage() {
+    alert('Export image function not implemented for duo mode yet.');
+  }
+
+  exportMusicXML() {
+    alert('Export MusicXML function not implemented for duo mode yet.');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  new App();
+});
