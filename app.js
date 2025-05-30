@@ -15,12 +15,14 @@ class App {
     this.audioRecorder = null;
     this.recordedChunks = [];
     this.listenTimer = null;
-    this.listeningDuration = 5000; // 5 seconds instead of 10 seconds
+    this.listeningDuration = 5000; // 5 seconds
     this.countdownInterval = null;
-    this.pianoKeys = []; // Track piano key elements
-    
-    // Fix: Initialize activeTones as an empty array
+    this.pianoKeys = [];
     this.activeTones = [];
+
+    this.mode = 'live'; // 'live' or 'manual' compose mode
+    this.playbackTimer = null;
+    this.playbackIndex = 0;
     
     this.initElements();
     this.initEventListeners();
@@ -28,7 +30,6 @@ class App {
     this.createPianoKeyboard();
   }
   
-  // --- Add Just Intonation helper ---
   getJustIntonationFrequency(noteName, octave, rootFreq = 440) {
     const justIntonationRatios = {
       'A': 1,
@@ -43,14 +44,12 @@ class App {
       'F': 45/32,
       'G': 16/9,
       'A#': 25/16,
-      'BB': 16/9, // double B for Bb (normalize in code)
+      'BB': 16/9,
       'EB': 6/5,
       'GB': 45/32,
     };
 
-    // Normalize noteName to uppercase, replace 'b' with 'B' for flats keys
-    let normalizedNote = noteName.toUpperCase().replace('B', 'B'); // keep sharps (#) as is
-    // Special case for flats: convert 'Bb' → 'BB' (to match keys)
+    let normalizedNote = noteName.toUpperCase();
     if (noteName.includes('b') && !noteName.includes('#')) {
       normalizedNote = noteName[0].toUpperCase() + 'B';
     }
@@ -61,7 +60,6 @@ class App {
   }
   
   initElements() {
-    // Get DOM elements
     this.micSelect = document.getElementById('mic-select');
     this.startBtn = document.getElementById('start-btn');
     this.addNoteBtn = document.getElementById('add-note-btn');
@@ -73,6 +71,11 @@ class App {
     this.downloadSineAudioBtn = document.getElementById('download-sine-audio-btn');
     this.exportImageBtn = document.getElementById('export-image-btn');
     this.exportMusicXMLBtn = document.getElementById('export-musicxml-btn');
+
+    // New elements for manual compose mode and playback
+    this.modeToggleBtn = document.getElementById('mode-toggle-btn');
+    this.playBtn = document.getElementById('play-btn');
+    this.stopBtn = document.getElementById('stop-btn');
   }
   
   initEventListeners() {
@@ -83,54 +86,67 @@ class App {
     this.downloadSineAudioBtn.addEventListener('click', () => this.downloadSineAudio());
     this.exportImageBtn.addEventListener('click', () => this.exportImage());
     this.exportMusicXMLBtn.addEventListener('click', () => this.exportMusicXML());
+
+    if (this.modeToggleBtn) {
+      this.modeToggleBtn.addEventListener('click', () => this.toggleMode());
+    }
+    if (this.playBtn) {
+      this.playBtn.addEventListener('click', () => this.playComposition());
+    }
+    if (this.stopBtn) {
+      this.stopBtn.addEventListener('click', () => this.stopPlayback());
+    }
   }
   
   createPianoKeyboard() {
     const keyboardElement = document.getElementById('piano-keyboard');
     if (!keyboardElement) return;
-    
-    // Define the notes to display (C3 to B4 - two octaves)
+
     const notes = [
       'C3', 'C#3', 'D3', 'D#3', 'E3', 'F3', 'F#3', 'G3', 'G#3', 'A3', 'A#3', 'B3',
       'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4'
     ];
-    
+
     let whiteKeyIndex = 0;
-    
-    notes.forEach((note, index) => {
+
+    notes.forEach(note => {
       const isBlackKey = note.includes('#');
       const keyElement = document.createElement('div');
-      
+
       keyElement.classList.add('piano-key');
       keyElement.classList.add(isBlackKey ? 'black-key' : 'white-key');
       keyElement.dataset.note = note;
-      
+
       const labelElement = document.createElement('div');
       labelElement.classList.add('key-label');
       labelElement.textContent = note;
       keyElement.appendChild(labelElement);
-      
+
       if (isBlackKey) {
         keyElement.style.left = `${whiteKeyIndex * 40 - 12}px`;
       } else {
         whiteKeyIndex++;
       }
-      
+
       keyElement.addEventListener('mousedown', () => {
-        this.playPianoNote(note);
+        if (this.mode === 'manual') {
+          this.addNoteManually(note);
+        } else {
+          this.playPianoNote(note);
+        }
         keyElement.classList.add('active');
       });
-      
+
       keyElement.addEventListener('mouseup', () => {
         this.stopPianoNote(note);
         keyElement.classList.remove('active');
       });
-      
+
       keyElement.addEventListener('mouseleave', () => {
         this.stopPianoNote(note);
         keyElement.classList.remove('active');
       });
-      
+
       keyboardElement.appendChild(keyElement);
       this.pianoKeys.push(keyElement);
     });
@@ -251,14 +267,11 @@ class App {
     if (!this.currentDetectedNote) return;
     
     const { note } = this.currentDetectedNote;
-    // Extract note name and octave, e.g. "C#4" → "C#", 4
     const noteName = note.slice(0, -1);
     const octave = parseInt(note.slice(-1));
     
-    // Calculate just intonation frequency based on A=440 root
     const justFreq = this.getJustIntonationFrequency(noteName, octave, 440);
     
-    // Store note with just intonation frequency
     this.notes.push({ note, frequency: justFreq });
     
     this.activeTones.push(note);
@@ -279,6 +292,67 @@ class App {
     this.addNoteBtn.disabled = true;
     this.currentDetectedNote = null;
     this.updatePitchDisplay('--', '');
+  }
+  
+  // --- New manual compose methods ---
+  toggleMode() {
+    this.mode = this.mode === 'live' ? 'manual' : 'live';
+    if (this.modeToggleBtn) {
+      this.modeToggleBtn.textContent = this.mode === 'live' ? 'Switch to Manual Compose' : 'Switch to Live Input';
+    }
+    
+    if (this.mode === 'manual') {
+      this.notes = [];
+      this.scoreRenderer.renderNotes(this.notes);
+      if (this.playBtn) this.playBtn.disabled = false;
+      if (this.stopBtn) this.stopBtn.disabled = false;
+      
+      // Disable live input buttons to avoid conflict
+      this.startBtn.disabled = true;
+      this.addNoteBtn.disabled = true;
+      this.micSelect.disabled = true;
+    } else {
+      if (this.playBtn) this.playBtn.disabled = true;
+      if (this.stopBtn) this.stopBtn.disabled = true;
+      this.startBtn.disabled = false;
+      this.addNoteBtn.disabled = true;
+      this.micSelect.disabled = false;
+    }
+  }
+  
+  addNoteManually(note) {
+    this.notes.push({ note, frequency: null });
+    this.scoreRenderer.renderNotes(this.notes);
+  }
+  
+  playComposition() {
+    if (this.notes.length === 0) return;
+    this.playbackIndex = 0;
+    this.playNextNote();
+  }
+  
+  playNextNote() {
+    if (this.playbackIndex >= this.notes.length) {
+      this.stopPlayback();
+      return;
+    }
+    const note = this.notes[this.playbackIndex];
+    const freq = note.frequency || this.getJustIntonationFrequency(note.note.slice(0, -1), parseInt(note.note.slice(-1)), 440);
+    
+    this.toneGenerator.playNote(note.note, freq);
+    
+    this.playbackTimer = setTimeout(() => {
+      this.toneGenerator.stopNote(note.note);
+      this.playbackIndex++;
+      this.playNextNote();
+    }, 600);
+  }
+  
+  stopPlayback() {
+    clearTimeout(this.playbackTimer);
+    this.playbackTimer = null;
+    this.toneGenerator.fadeOutAll(true, 0.5);
+    this.playbackIndex = 0;
   }
   
   updateFrequenciesToIgnore() {
