@@ -17,6 +17,9 @@ class App {
     this.initEventListeners();
     this.loadMicrophones();
     this.createPianoKeyboard();
+
+    // Disable piano keyboard on start (enabled only in manual mode)
+    this.setPianoKeyboardEnabled(false);
   }
 
   createPlayerState(id) {
@@ -123,12 +126,19 @@ class App {
     if (this.exportImageBtn) this.exportImageBtn.addEventListener('click', () => this.exportImage());
     if (this.exportMusicXMLBtn) this.exportMusicXMLBtn.addEventListener('click', () => this.exportMusicXML());
 
-    // Setup UI for activePlayer switching (you need to add matching HTML radios/buttons)
+    // Add event listeners for player selection radio buttons
     const playerRadios = document.querySelectorAll('input[name="activePlayer"]');
     playerRadios.forEach(radio => {
       radio.addEventListener('change', (e) => {
         this.activePlayer = e.target.value;
       });
+    });
+  }
+
+  setPianoKeyboardEnabled(enabled) {
+    this.pianoKeys.forEach(key => {
+      key.style.pointerEvents = enabled ? 'auto' : 'none';
+      key.style.opacity = enabled ? '1' : '0.5';
     });
   }
 
@@ -309,7 +319,7 @@ class App {
       return;
     }
     player.detectedNoteElem.textContent = note;
-    if (typeof cents === 'number') {
+    if (cents !== undefined && cents !== null) {
       player.detectedCentsElem.textContent = cents > 0 ? `+${cents.toFixed(0)}¢` : `${cents.toFixed(0)}¢`;
     } else {
       player.detectedCentsElem.textContent = '';
@@ -367,6 +377,8 @@ class App {
       this.player1.micSelect.disabled = true;
       this.player2.startBtn.disabled = true;
       this.player2.micSelect.disabled = true;
+
+      this.setPianoKeyboardEnabled(true); // Enable piano keyboard only in manual mode
     } else {
       if (this.player1.playBtn) this.player1.playBtn.disabled = true;
       if (this.player1.stopBtn) this.player1.stopBtn.disabled = true;
@@ -380,6 +392,8 @@ class App {
       this.player1.micSelect.disabled = false;
       this.player2.startBtn.disabled = false;
       this.player2.micSelect.disabled = false;
+
+      this.setPianoKeyboardEnabled(false); // Disable piano keyboard in live mode
     }
   }
 
@@ -424,19 +438,4 @@ class App {
     if (player.playbackIndex >= player.notes.length) {
       if (player.nextNoteBtn) player.nextNoteBtn.disabled = true;
     } else {
-      if (player.nextNoteBtn) player.nextNoteBtn.disabled = false;
-    }
-  }
-
-  stopCurrentNote(playerId) {
-    const player = this[`player${playerId}`];
-    if (player.currentPlayingNote) {
-      player.toneGenerator.stopNote(player.currentPlayingNote);
-      player.currentPlayingNote = null;
-    }
-  }
-
-  stopAllNotes(playerId) {
-    const player = this[`player${playerId}`];
-    player.activeTones.forEach(note => {
-      player
+     
