@@ -439,4 +439,8 @@ class App {
   }
 
   updateFrequenciesToIgnore(playerId) {
-   
+    const player = this[`player${playerId}`];
+    const frequencies = player.notes
+      .filter(note => player.activeTones.includes(note.note))
+      .map(note => note.frequency);
+    player.pitchDetector.setFrequenciesToIgnore(f
