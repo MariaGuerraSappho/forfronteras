@@ -5,107 +5,109 @@ class ScoreRenderer {
     this.context = null;
     this.stave = null;
     this.notes = [];
-    
+
+    this.width = 700;  // track width explicitly
+    this.height = 150; // track height explicitly
+
     this.initRenderer();
   }
-  
+
   initRenderer() {
     // Initialize the renderer
     const container = document.getElementById(this.containerId);
     const { Renderer, Stave } = Vex.Flow;
-    
+
     // Clear any existing content
     container.innerHTML = '';
-    
-    // Create renderer
+
+    // Create renderer with initial dimensions
     this.vf = new Renderer(container, Renderer.Backends.SVG);
-    
-    // Configure renderer with explicit dimensions
-    this.vf.resize(700, 150);
+    this.vf.resize(this.width, this.height);
     this.context = this.vf.getContext();
     this.context.setFont("Arial", 10);
-    
+
     // Create a stave
-    this.stave = new Stave(10, 40, 680);
+    this.stave = new Stave(10, 40, this.width - 20);
     this.stave.addClef("treble").addTimeSignature("4/4");
     this.stave.setContext(this.context).draw();
   }
-  
+
   renderNotes(notesData) {
     this.notes = notesData;
     this.context.clear();
-    
-    // Calculate the needed width based on the number of notes
-    // Allow approximately 80px per note with some padding
+
+    // Calculate needed width based on number of notes
     const minWidth = 700;
     const desiredWidth = Math.max(minWidth, this.notes.length * 80 + 50);
-    
-    // Resize the renderer if needed to accommodate all notes
-    if (desiredWidth > this.vf.getWidth()) {
-      this.vf.resize(desiredWidth, 150);
+
+    // Resize renderer if needed
+    if (desiredWidth > this.width) {
+      this.width = desiredWidth;
+      this.vf.resize(this.width, this.height);
+
       // Recreate stave with new width
-      this.stave = new Vex.Flow.Stave(10, 40, desiredWidth - 20);
+      this.stave = new Vex.Flow.Stave(10, 40, this.width - 20);
       this.stave.addClef("treble").addTimeSignature("4/4");
     }
-    
+
     // Redraw the stave
     this.stave.setContext(this.context).draw();
-    
+
     if (this.notes.length === 0) return;
-    
+
     const { StaveNote, Accidental } = Vex.Flow;
     const renderedNotes = [];
-    
-    // Render ALL notes instead of limiting to the last 8
+
+    // Render all notes
     for (const noteData of this.notes) {
       const noteName = noteData.note.substring(0, noteData.note.length - 1);
       const octave = noteData.note.substring(noteData.note.length - 1);
-      
+
       // Convert to VexFlow notation
       let vfNote = this.convertToVexFlowNote(noteName, octave);
-      
+
       // Create the note
       const staveNote = new StaveNote({
         keys: [vfNote],
         duration: "q"
       });
-      
+
       // Add accidental if needed
       if (noteName.includes('#')) {
         staveNote.addModifier(new Accidental("#"));
       } else if (noteName.includes('b')) {
         staveNote.addModifier(new Accidental("b"));
       }
-      
+
       renderedNotes.push(staveNote);
     }
-    
+
     // Format and draw the notes
     const { Formatter, Voice } = Vex.Flow;
-    
-    // Always ensure we have at least one note for the voice
+
+    // If no notes, add a quarter rest
     if (renderedNotes.length === 0) {
       renderedNotes.push(new StaveNote({
         keys: ["b/4"],
-        duration: "qr" // quarter rest
+        duration: "qr"
       }));
     }
-    
+
     const voice = new Voice({ num_beats: this.notes.length, beat_value: 4 });
     voice.addTickables(renderedNotes);
-    
-    new Formatter().joinVoices([voice]).format([voice], desiredWidth - 100);
+
+    new Formatter().joinVoices([voice]).format([voice], this.width - 100);
     voice.draw(this.context, this.stave);
   }
-  
+
   convertToVexFlowNote(noteName, octave) {
     // Convert note name to VexFlow format (lowercase for note, / for octave)
     let note = noteName.replace('#', '').toLowerCase();
-    
+
     // VexFlow format: note/octave (e.g., "c/4")
     return `${note}/${octave}`;
   }
-  
+
   generateMusicXML(notesData) {
     // Basic MusicXML template
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -132,12 +134,12 @@ class ScoreRenderer {
           <line>2</line>
         </clef>
       </attributes>`;
-    
+
     // Add notes
     for (const noteData of notesData) {
       const noteName = noteData.note.substring(0, noteData.note.length - 1);
       const octave = noteData.note.substring(noteData.note.length - 1);
-      
+
       // Handle accidentals
       let step = noteName.charAt(0);
       let alter = "0";
@@ -146,7 +148,7 @@ class ScoreRenderer {
       } else if (noteName.includes('b')) {
         alter = "-1";
       }
-      
+
       // Add note to XML
       xml += `
       <note>
@@ -159,13 +161,13 @@ class ScoreRenderer {
         <type>quarter</type>
       </note>`;
     }
-    
+
     // Close the XML
     xml += `
     </measure>
   </part>
 </score-partwise>`;
-    
+
     return xml;
   }
 }
