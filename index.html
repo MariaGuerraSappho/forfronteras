@@ -1,13 +1,16 @@
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>For Fronterras - Musical Pitch Detector</title>
   <!-- Add Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
   <!-- Import VexFlow for music notation -->
   <script src="https://cdn.jsdelivr.net/npm/vexflow@4.1.0/build/cjs/vexflow.js"></script>
   <!-- Import RecordRTC for recording -->
@@ -18,10 +21,10 @@
 <body>
   <div class="app-container">
     <header>
-      <img src="logo.png" alt="For Fronterras Logo" width="80">
+      <img src="logo.png" alt="For Fronterras Logo" width="80" />
       <h1>For Fronterras - Duo Mode</h1>
     </header>
-    
+
     <main>
       <div class="controls-section">
         <div class="input-controls">
@@ -81,6 +84,12 @@
       <div class="note-controls">
         <button id="mode-toggle-btn">Switch to Manual Compose</button>
         <button id="end-btn" class="secondary-btn" disabled>End Session</button>
+
+        <!-- Player Select Radio Buttons Added Here -->
+        <div class="player-select" style="margin-top: 1em;">
+          <label><input type="radio" name="activePlayer" value="1" checked /> Player 1</label>
+          <label style="margin-left: 1em;"><input type="radio" name="activePlayer" value="2" /> Player 2</label>
+        </div>
       </div>
 
       <div class="export-section" id="export-section" style="display: none;">
@@ -94,16 +103,16 @@
       </div>
     </main>
   </div>
-  
+
   <!-- importmap and app.js as before -->
   <script type="importmap">
-  {
-    "imports": {
-      "pitch-detector": "./pitch-detector.js",
-      "tone-generator": "./tone-generator.js",
-      "score-renderer": "./score-renderer.js"
+    {
+      "imports": {
+        "pitch-detector": "./pitch-detector.js",
+        "tone-generator": "./tone-generator.js",
+        "score-renderer": "./score-renderer.js"
+      }
     }
-  }
   </script>
   <script type="module" src="app.js"></script>
 </body>
