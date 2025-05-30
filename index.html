@@ -19,45 +19,70 @@
   <div class="app-container">
     <header>
       <img src="logo.png" alt="For Fronterras Logo" width="80">
-      <h1>For Fronterras</h1>
+      <h1>For Fronterras - Duo Mode</h1>
     </header>
     
     <main>
       <div class="controls-section">
         <div class="input-controls">
-          <label for="mic-select">Select Microphone:</label>
-          <select id="mic-select" disabled>
+          <label for="mic-select1">Select Microphone Player 1:</label>
+          <select id="mic-select1" disabled>
             <option value="">Loading microphones...</option>
           </select>
-          <button id="start-btn" class="primary-btn">Start Listening</button>
+          <button id="start-btn1" class="primary-btn">Start Listening Player 1</button>
         </div>
-        
-        <div class="note-controls">
-          <button id="mode-toggle-btn">Switch to Manual Compose</button>
-<button id="play-btn" disabled>Play Composition</button>
-          <button id="next-note-btn" disabled>Next Note</button>
-<button id="stop-btn" disabled>Stop Playback</button>
-          <button id="end-btn" class="secondary-btn" disabled>End Session</button>
-        </div>
-      </div>
-      
-      <div class="display-section">
-        <div class="pitch-display">
-          <div class="current-pitch">
-            <span id="detected-note">--</span>
-            <span id="detected-cents"></span>
-          </div>
-        </div>
-        
-        <div class="piano-container">
-          <div id="piano-keyboard"></div>
-        </div>
-        
-        <div class="score-container">
-          <div id="score-display"></div>
+        <div class="input-controls">
+          <label for="mic-select2">Select Microphone Player 2:</label>
+          <select id="mic-select2" disabled>
+            <option value="">Loading microphones...</option>
+          </select>
+          <button id="start-btn2" class="primary-btn">Start Listening Player 2</button>
         </div>
       </div>
-      
+
+      <div class="pitch-display">
+        <div class="current-pitch">
+          <strong>Player 1:</strong>
+          <span id="detected-note1">--</span>
+          <span id="detected-cents1"></span>
+        </div>
+        <div class="current-pitch">
+          <strong>Player 2:</strong>
+          <span id="detected-note2">--</span>
+          <span id="detected-cents2"></span>
+        </div>
+      </div>
+
+      <div class="score-container">
+        <h3>Player 1 Score</h3>
+        <div id="score-display1"></div>
+        <div class="playback-controls">
+          <button id="play-btn1" disabled>Play Player 1</button>
+          <button id="next-note-btn1" disabled>Next Note Player 1</button>
+          <button id="stop-btn1" disabled>Stop Player 1</button>
+        </div>
+      </div>
+
+      <div class="score-container">
+        <h3>Player 2 Score</h3>
+        <div id="score-display2"></div>
+        <div class="playback-controls">
+          <button id="play-btn2" disabled>Play Player 2</button>
+          <button id="next-note-btn2" disabled>Next Note Player 2</button>
+          <button id="stop-btn2" disabled>Stop Player 2</button>
+        </div>
+      </div>
+
+      <div class="piano-container">
+        <h3>Shared Piano Keyboard (Manual Compose Mode)</h3>
+        <div id="piano-keyboard"></div>
+      </div>
+
+      <div class="note-controls">
+        <button id="mode-toggle-btn">Switch to Manual Compose</button>
+        <button id="end-btn" class="secondary-btn" disabled>End Session</button>
+      </div>
+
       <div class="export-section" id="export-section" style="display: none;">
         <h2>Session Complete!</h2>
         <div class="export-buttons">
@@ -69,8 +94,8 @@
       </div>
     </main>
   </div>
-
-  <!-- JavaScript imports -->
+  
+  <!-- importmap and app.js as before -->
   <script type="importmap">
   {
     "imports": {
